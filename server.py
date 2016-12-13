@@ -8,7 +8,7 @@ from datetime import datetime
 
 # Define our priority levels.
 # These are the values that the "priority" property can take on a help request.
-PRIORITIES = ('closed', 'low', 'normal', 'high')
+PRIORITIES = ('1 lb', '3 lbs', '5 lbs', '10 lbs')
 
 # Load data from disk.
 # This simply loads the data from our "database," which is just a JSON file.
@@ -89,7 +89,7 @@ for arg in ['from', 'title', 'description']:
 # Only the priority and comments can be updated.
 update_helprequest_parser = reqparse.RequestParser()
 update_helprequest_parser.add_argument(
-    'priority', type=int, default=PRIORITIES.index('normal'))
+    'priority', type=int, default=PRIORITIES.index('5 lbs'))
 update_helprequest_parser.add_argument(
     'comment', type=str, default='')
 
@@ -159,7 +159,7 @@ class HelpRequestList(Resource):
         helprequest['@id'] = 'request/' + helprequest_id
         helprequest['@type'] = 'helpdesk:HelpRequest'
         helprequest['time'] = datetime.isoformat(datetime.now())
-        helprequest['priority'] = PRIORITIES.index('normal')
+        helprequest['priority'] = PRIORITIES.index('5 lbs')
         data['helprequests'][helprequest_id] = helprequest
         return make_response(
             render_helprequest_list_as_html(
