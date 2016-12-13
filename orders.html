@@ -1,0 +1,54 @@
+<!--<!doctype html>-->
+<!--<link rel="alternate" type="application/json" href="{{ request.path }}.json">-->
+<!--<title>All Food Items</title>-->
+
+<!--{% if request.args["sort_by"] == "priority" %}-->
+<!--<a href="{{ url_for('helprequestlist') }}?sort_by=date_posted">sort by time</a>-->
+<!--{% else %}-->
+<!--<a href="{{ url_for('helprequestlist') }}?sort_by=transaction">sort by transaction</a>-->
+<!--{% endif %}-->
+
+<!--<form class="search" method="get">-->
+  <!--<input name="query" type="text" value="{{ request.args["query"] }}">-->
+  <!--{% if 'sort_by' in request.args %}-->
+  <!--<input name="sort_by" type="hidden" value="{{ request.args["sort_by"] }}">-->
+  <!--{% endif %}-->
+  <!--<input class="query" type="submit" value="search">-->
+<!--</form>-->
+
+<!--<ol>-->
+  <!--{% for fooditem_id, fooditem in fooditems %}-->
+  <!--<li itemscope-->
+      <!--itemid="{{ url_for('fooditem', fooditem_id=fooditem_id, _external=True) }}"-->
+      <!--resource="{{ url_for('fooditem', fooditem_id=fooditem_id, _external=True) }}"-->
+      <!--vocab="http://schema.org/"-->
+      <!--prefix="helpdesk: https://rawgit.com/sils-webinfo/helpdesk/master/vocab.ttl#"-->
+      <!--property="order:orders"-->
+      <!--typeof="foodlisting:FoodItem">-->
+    <!--<div itemprop="http://www.w3.org/ns/md#item"-->
+         <!--itemscope itemtype="http://schema.org/CreativeWork/HelpRequest">-->
+    <!--<time itemprop="dateCreated"-->
+          <!--property="dateCreated"-->
+          <!--datetime="{{ fooditem.date_posted }}">{{ fooditem.date_posted }}</time>-->
+    <!--transactions: {{ transaction[fooditem.transaction] }}-->
+    <!--<a href="{{ url_for('fooditem', fooditem_id=fooditem_id) }}">-->
+      <!--<span itemprop="name" property="name">{{ fooditem.food }}</span>-->
+    <!--</a>-->
+    <!--</div>-->
+  <!--</li>-->
+  <!--{% endfor %}-->
+<!--</ol>-->
+
+<!--<h1>Edit Order</h1>-->
+<!--<form class="order_form" method="patch">-->
+  <!--<label>change quantity-->
+  <!--<ul>-->
+
+      <!--<li itemprop="comment" itemscope itemtype="http://schema.org/Comment"-->
+          <!--property="comment" typeof="quantity">-->
+        <!--<p itemprop="text" property="text"></p>-->
+      <!--</li>-->
+
+    <!--</ul>-->
+    <!--<textarea name="comment"></textarea>-->
+  <!--</label>-->
