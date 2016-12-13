@@ -8,7 +8,7 @@ from datetime import datetime
 
 # Define our priority levels.
 # These are the values that the "priority" property can take on a help request.
-PRIORITIES = ('1 lb', '3 lbs', '5 lbs', '10 lbs')
+TRANSACTION = ('order requested', 'order purchased', 'seller paid', 'completed', "no more", "available")
 
 # Load data from disk.
 # This simply loads the data from our "database," which is just a JSON file.
@@ -23,49 +23,46 @@ def generate_id(size=6, chars=string.ascii_lowercase + string.digits):
 
 
 # Respond with 404 Not Found if no help request with the specified ID exists.
-def error_if_helprequest_not_found(helprequest_id):
-    if helprequest_id not in data['helprequests']:
-        message = "No help request with ID: {}".format(helprequest_id)
+def error_if_fooditem_not_found(fooditem_id):
+    if fooditem_id not in data['fooditems']:
+        message = "No food item with ID: {}".format(fooditem_id)
         abort(404, message=message)
 
 
-# Filter and sort a list of helprequests.
-def filter_and_sort_helprequests(query='', sort_by='time'):
+# Filter and sort a list of fooditems.
+def filter_and_sort_fooditems(query='', sort_by="date_posted"):
 
     # Returns True if the query string appears in the help request's
     # title or description.
     def matches_query(item):
-        (helprequest_id, helprequest) = item
-        text = helprequest['title'] + helprequest['description']
+        (fooditem_id, fooditem) = item
+        text = fooditem['food'] + fooditem['date_posted']
         return query.lower() in text
 
     # Returns the help request's value for the sort property (which by
     # default is the "time" property).
     def get_sort_value(item):
-        (helprequest_id, helprequest) = item
-        return helprequest[sort_by]
+        (fooditem_id, fooditem) = item
+        return fooditem[sort_by]
 
-    filtered_helprequests = filter(matches_query, data['helprequests'].items())
+    filtered_fooditems= filter(matches_query, data['fooditems'].items())
 
-    return sorted(filtered_helprequests, key=get_sort_value, reverse=True)
+    return sorted(filtered_fooditems, key=get_sort_value, reverse=True)
 
 
 # Given the data for a help request, generate an HTML representation
 # of that help request.
-def render_helprequest_as_html(helprequest):
+def render_helprequest_as_html(fooditem):
     return render_template(
-        'helprequest+microdata+rdfa.html',
-        helprequest=helprequest,
-        priorities=reversed(list(enumerate(PRIORITIES))))
-
+        'fooditem.html',
+        transactions=reversed(list(enumerate(TRANSACTION))))
 
 # Given the data for a list of help requests, generate an HTML representation
 # of that list.
-def render_helprequest_list_as_html(helprequests):
+def render_helprequest_list_as_html(fooditems):
     return render_template(
-        'helprequests+microdata+rdfa.html',
-        helprequests=helprequests,
-        priorities=PRIORITIES)
+        'fooditems.html',
+        transactions=TRANSACTION)
 
 
 # Raises an error if the string x is empty (has zero length).
@@ -79,7 +76,7 @@ def nonempty_string(x):
 # Specify the data necessary to create a new help request.
 # "from", "title", and "description" are all required values.
 new_helprequest_parser = reqparse.RequestParser()
-for arg in ['from', 'title', 'description']:
+for arg in ['seller', 'food', 'quantity']:
     new_helprequest_parser.add_argument(
         arg, type=nonempty_string, required=True,
         help="'{}' is a required value".format(arg))
@@ -89,9 +86,9 @@ for arg in ['from', 'title', 'description']:
 # Only the priority and comments can be updated.
 update_helprequest_parser = reqparse.RequestParser()
 update_helprequest_parser.add_argument(
-    'priority', type=int, default=PRIORITIES.index('5 lbs'))
+    'transaction', type=int, default=TRANSACTION.index('order requested'))
 update_helprequest_parser.add_argument(
-    'comment', type=str, default='')
+    'price', type=str, default='')
 
 
 # Specify the parameters for filtering and sorting help requests.
@@ -100,7 +97,7 @@ query_parser = reqparse.RequestParser()
 query_parser.add_argument(
     'query', type=str, default='')
 query_parser.add_argument(
-    'sort_by', type=str, choices=('priority', 'time'), default='time')
+    'sort_by', type=str, choices=('transaction', 'date_posted'), default='date_posted')
 
 
 # Define our help request resource.
@@ -108,24 +105,24 @@ class HelpRequest(Resource):
 
     # If a help request with the specified ID does not exist,
     # respond with a 404, otherwise respond with an HTML representation.
-    def get(self, helprequest_id):
-        error_if_helprequest_not_found(helprequest_id)
+    def get(self, fooditem_id):
+        error_if_fooditem_not_found(fooditem_id)
         return make_response(
             render_helprequest_as_html(
-                data['helprequests'][helprequest_id]), 200)
+                data['fooditems'][fooditem_id]), 200)
 
     # If a help request with the specified ID does not exist,
     # respond with a 404, otherwise update the help request and respond
     # with the updated HTML representation.
-    def patch(self, helprequest_id):
-        error_if_helprequest_not_found(helprequest_id)
-        helprequest = data['helprequests'][helprequest_id]
+    def patch(self, fooditem_id):
+        error_if_fooditem_not_found(fooditem_id)
+        fooditem = data['fooditems'][fooditem_id]
         update = update_helprequest_parser.parse_args()
-        helprequest['priority'] = update['priority']
-        if len(update['comment'].strip()) > 0:
-            helprequest.setdefault('comments', []).append(update['comment'])
+        fooditem['transaction'] = update['transaction']
+        if len(update['price'].strip()) > 0:
+            fooditem.setdefault('price', []).append(update['comment'])
         return make_response(
-            render_helprequest_as_html(helprequest), 200)
+            render_helprequest_as_html(fooditem), 200)
 
 
 # Define a resource for getting a JSON representation of a help request.
@@ -133,11 +130,11 @@ class HelpRequestAsJSON(Resource):
 
     # If a help request with the specified ID does not exist,
     # respond with a 404, otherwise respond with a JSON representation.
-    def get(self, helprequest_id):
-        error_if_helprequest_not_found(helprequest_id)
-        helprequest = data['helprequests'][helprequest_id]
-        helprequest['@context'] = data['@context']
-        return helprequest
+    def get(self, fooditem_id):
+        error_if_fooditem_not_found(fooditem_id)
+        fooditem = data['fooditems'][fooditem_id]
+        fooditem['@context'] = data['@context']
+        return fooditem
 
 
 # Define our help request list resource.
@@ -149,21 +146,21 @@ class HelpRequestList(Resource):
         query = query_parser.parse_args()
         return make_response(
             render_helprequest_list_as_html(
-                filter_and_sort_helprequests(**query)), 200)
+                filter_and_sort_fooditems(**query)), 200)
 
-    # Add a new help request to the list, and respond with an HTML
+    # Add a new help food listing to the list, and respond with an HTML
     # representation of the updated list.
     def post(self):
-        helprequest = new_helprequest_parser.parse_args()
-        helprequest_id = generate_id()
-        helprequest['@id'] = 'request/' + helprequest_id
-        helprequest['@type'] = 'helpdesk:HelpRequest'
-        helprequest['time'] = datetime.isoformat(datetime.now())
-        helprequest['priority'] = PRIORITIES.index('5 lbs')
-        data['helprequests'][helprequest_id] = helprequest
+        fooditem = new_helprequest_parser.parse_args()
+        fooditem_id = generate_id()
+        fooditem['@id'] = 'request/' + fooditem_id
+        fooditem['@type'] = 'foodlisting:FoodItem'
+        fooditem['date_posted'] = datetime.isoformat(datetime.now())
+        fooditem['transaction'] = TRANSACTION.index('order requested')
+        data['fooditems'][fooditem_id] = fooditem
         return make_response(
             render_helprequest_list_as_html(
-                filter_and_sort_helprequests()), 201)
+                filter_and_sort_fooditems()), 201)
 
 
 # Define a resource for getting a JSON representation of the help request list.
@@ -171,14 +168,39 @@ class HelpRequestListAsJSON(Resource):
     def get(self):
         return data
 
+    # I wasn't sure how to make a new functioning class and it kept crashing my site, so I've left this commented out.
+    # class ordersList(Resource):
+    #     # Respond with an HTML representation of the help request list, after
+    #     # applying any filtering and sorting parameters.
+    #     def get(self):
+    #         query = query_parser.parse_args()
+    #         return make_response(
+    #             render_helprequest_list_as_html(
+    #                 filter_and_sort_fooditems(**query)), 200)
+    #
+    #     # Add a new help food listing to the list, and respond with an HTML
+    #     # representation of the updated list.
+    #     def post(self):
+    #         orderitem = new_helprequest_parser.parse_args()
+    #         orderitem = generate_id()
+    #         orderitem['@id'] = 'request/' + orderitem_id
+    #         orderitem['@type'] = 'foodlisting:FoodItem'
+    #         orderitem['date_posted'] = datetime.isoformat(datetime.now())
+    #         orderitem['transaction'] = TRANSACTION.index('order requested')
+    #         data['orderitems'][orderitem_id] = orderitem
+    #         return make_response(
+    #             render_helprequest_list_as_html(
+    #                 filter_and_sort_fooditems()), 201)
 
 # Assign URL paths to our resources.
 app = Flask(__name__)
 api = Api(app)
 api.add_resource(HelpRequestList, '/requests')
 api.add_resource(HelpRequestListAsJSON, '/requests.json')
-api.add_resource(HelpRequest, '/request/<string:helprequest_id>')
-api.add_resource(HelpRequestAsJSON, '/request/<string:helprequest_id>.json')
+api.add_resource(HelpRequest, '/request/<string:fooditem_id>')
+api.add_resource(HelpRequestAsJSON, '/request/<string:fooditem_id>.json')
+#api.add_resource(ordersList, '/requests')
+#api.add_resource(ordersListAsJSON, '/request/<string:orderitem_id>.json')
 
 
 # Redirect from the index to the list of help requests.
