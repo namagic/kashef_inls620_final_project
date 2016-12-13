@@ -20,7 +20,8 @@
       "from" : "gary@unc.edu",
       "time" : "2014-10-13T12:00:4",
       "priority": 3,
-      "comments": [ "needs to be fixed before he goes to China next week" ]
+      "comments": [ "needs to be fixed before he goes to China next week" ],
+      "seller": "boo"
     },
     "dig73h":
     { "@type": "helpdesk:HelpRequest",
